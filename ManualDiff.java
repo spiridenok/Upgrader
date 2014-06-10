@@ -18,6 +18,7 @@ import asml.dsl.ddf.ddf.Definition;
 import asml.dsl.ddf.ddf.Model;
 import asml.dsl.ddf.ddf.StructDefinition;
 import asml.dsl.ddf.ddf.StructField;
+import asml.dsl.ddf.ddf.TypeDefinition;
 import asml.dsl.ddf.ddf.TypeDefinitionWithAttributes;
 import asml.dsl.ddf.ddf.TypeReference;
 import asml.dsl.ddf.query.DdfEObjectRetriever;
@@ -25,13 +26,17 @@ import asml.dsl.ddf.services.DdfGrammarAccess.TypeReferenceElements;
 
 public class ManualDiff {
 
+	private static Resource orgResource;
+	private static ResourceSet rs;
+	private static ResourceSet newRs;
+	
 	public static void main(String[] args) {
 		DdfStandaloneSetup.doSetup();
 		
-		ResourceSet rs = new ResourceSetImpl();
+		rs = new ResourceSetImpl();
 //		Resource orgDefResource = rs.getResource(URI.createURI("DNDMxDEF.ddf"), true);
-		Resource orgResource = rs.getResource(URI.createURI("DNDMxTRxDEF.ddf"), true);
-		ResourceSet newRs = new ResourceSetImpl();
+		orgResource = rs.getResource(URI.createURI("DNDMxTRxDEF.ddf"), true);
+		newRs = new ResourceSetImpl();
 //		Resource newDefResource = newRs.getResource(URI.createURI("DNDMxDEF.ddf"), true);
 		Resource newResource = newRs.getResource(URI.createURI("DNDMxTRxDEF_new.ddf"), true);
 //		Resource resource = rs.getResource(URI.createFileURI("h:/garbage/DNDMxTRxDEF.ddf"), true);
@@ -53,19 +58,43 @@ public class ManualDiff {
 	
 	private static void check_types( StructDefinition org_sd, Model new_model, String qualified_name )
 	{
+		System.out.println( "--------------- " + org_sd.getName() + "-------------------------------" );
 		for( StructField sf : org_sd.getStructFieldList() )
 		{
-//			System.out.println("field: " + sf.getField() + ", type: " + sf.getType());
+			System.out.println("field: " + sf.getField() + ", type: " + sf.getType());
 			final String full_field_name = qualified_name + "." + sf.getField();
 			
-			TypeDefinitionWithAttributes new_mcs = find_mcs_object( new_model, org_sd.getName() );
+//			TypeDefinitionWithAttributes new_mcs = find_mcs_object( new_model, org_sd.getName() );
+			TypeDefinitionWithAttributes new_mcs = resolve_type( newRs, org_sd.getName());
 
+			if( new_mcs == null )
+			{
+				System.out.println( "Null for: " + org_sd.getName()  + ":" + sf.getField() + ":" + sf.getType().getClass());
+//				TypeReference tr = (TypeReference) sf.getType();
+				
+//				System.out.println( "Type definition: " + tr.getType().getName() );
+				String type_name = org_sd.getName();
+				
+				try
+				{
+					// TODO: just a hack to load "_new.dff". needs to be changed before going into production!
+					String name = type_name.substring(0,type_name.indexOf(':'))+"_new.ddf";
+					newRs.getResource(URI.createURI(name), true);
+					System.out.println(name + " is loaded for NEW!" );
+					new_mcs = resolve_type( newRs, org_sd.getName());
+				}
+				catch(Exception e)
+				{
+					System.out.println("!!! Can not resolve file " + type_name + " for field " + sf.getField());
+				}
+			}
 			StructDefinition new_sd = (StructDefinition)new_mcs.getTypeDefinition();
+//			System.out.println( "new sd: " + new_sd );
 			
 			StructField new_sf = find_struct_field(new_sd, sf.getField() );
 			if ( new_sf == null )
 			{
-				System.out.println("Field is removed: " + full_field_name );
+				System.out.println("Field is not found: " + full_field_name );
 				return;
 			}
 			
@@ -79,8 +108,35 @@ public class ManualDiff {
 			if( sf.getType() instanceof TypeReference )
 			{
 				TypeReference tr = (TypeReference) sf.getType();
+//				if( tr.getType().getName().startsWith("DNDMxDEF:"))
+//					System.out.println( "Need to resolve + " + tr.getType().getName() );
+//				System.out.println( "Type is " + tr.getClass() + ":" + tr.getType());
 				if( tr.getType() instanceof StructDefinition)
+				{
 					check_types((StructDefinition)tr.getType(), new_model, full_field_name );
+				}
+				else if( tr.getType() instanceof TypeDefinition )
+				{
+					System.out.println( "Type definition: " + tr.getType().getName() );
+					String name = tr.getType().getName().substring(0,tr.getType().getName().indexOf(':'))+".ddf";
+					
+					try
+					{
+						if( resolve_type(rs, tr.getType().getName() ) != null )
+						{
+							System.out.println( "Existing type " + tr.getType() );
+						}
+						else
+						{
+							rs.getResource(URI.createURI(name), true);
+							System.out.println(name + " is loaded!" );
+						}
+					}
+					catch(Exception e)
+					{
+						System.out.println("!!! Can not resolve file " + name + " for field " + sf.getField());
+					}
+				}
 			}
 		}
 	}
@@ -132,5 +188,19 @@ public class ManualDiff {
 			}
 		}
 		return null;
-	}	
+	}
+
+	private static TypeDefinitionWithAttributes resolve_type( ResourceSet set, String type_name )
+	{
+		for( Resource res:  set.getResources() )
+		{
+			TypeDefinitionWithAttributes td = find_mcs_object( (Model)res.getContents().get(0), type_name );
+			if( td != null )
+			{
+				System.out.println( "Found type: " + type_name );
+				return td;
+			}			
+		}
+		return null;
+	}
 }
