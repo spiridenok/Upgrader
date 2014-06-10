@@ -12,7 +12,14 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 
 import asml.dsl.ddf.DdfStandaloneSetup;
+import asml.dsl.ddf.ddf.Attribute;
+import asml.dsl.ddf.ddf.AttributeKind;
+import asml.dsl.ddf.ddf.Attributes;
 import asml.dsl.ddf.ddf.BasicTypeReference;
+import asml.dsl.ddf.ddf.ConstantExpression;
+import asml.dsl.ddf.ddf.ConstantValue;
+import asml.dsl.ddf.ddf.ConstantValueReference;
+import asml.dsl.ddf.ddf.DDFP_CONSTANT;
 import asml.dsl.ddf.ddf.DDFType;
 import asml.dsl.ddf.ddf.Definition;
 import asml.dsl.ddf.ddf.Model;
@@ -58,10 +65,11 @@ public class ManualDiff {
 	
 	private static void check_types( StructDefinition org_sd, Model new_model, String qualified_name )
 	{
-		System.out.println( "--------------- " + org_sd.getName() + "-------------------------------" );
+//		System.out.println( "--------------- " + org_sd.getName() + "-------------------------------" );
 		for( StructField sf : org_sd.getStructFieldList() )
 		{
-			System.out.println("field: " + sf.getField() + ", type: " + sf.getType());
+//			System.out.println("field: " + sf.getField() + ", type: " + sf.getType());
+//			System.out.println("field: " + sf.getField() + ", attrs: " + sf.getAttibutes());
 			final String full_field_name = qualified_name + "." + sf.getField();
 			
 //			TypeDefinitionWithAttributes new_mcs = find_mcs_object( new_model, org_sd.getName() );
@@ -69,7 +77,7 @@ public class ManualDiff {
 
 			if( new_mcs == null )
 			{
-				System.out.println( "Null for: " + org_sd.getName()  + ":" + sf.getField() + ":" + sf.getType().getClass());
+//				System.out.println( "Null for: " + org_sd.getName()  + ":" + sf.getField() + ":" + sf.getType().getClass());
 //				TypeReference tr = (TypeReference) sf.getType();
 				
 //				System.out.println( "Type definition: " + tr.getType().getName() );
@@ -80,7 +88,7 @@ public class ManualDiff {
 					// TODO: just a hack to load "_new.dff". needs to be changed before going into production!
 					String name = type_name.substring(0,type_name.indexOf(':'))+"_new.ddf";
 					newRs.getResource(URI.createURI(name), true);
-					System.out.println(name + " is loaded for NEW!" );
+//					System.out.println(name + " is loaded for NEW!" );
 					new_mcs = resolve_type( newRs, org_sd.getName());
 				}
 				catch(Exception e)
@@ -97,6 +105,9 @@ public class ManualDiff {
 				System.out.println("Field is not found: " + full_field_name );
 				return;
 			}
+			
+			if( find_attr_diff(sf.getAttibutes(), new_sf.getAttibutes()) )
+				System.out.println( "Attributes changed for " + full_field_name );
 			
 			boolean types_are_ok = same_types( sf.getType(), new_sf.getType() );
 //			System.out.println(" types are equal: " + types_are_ok  );
@@ -117,19 +128,19 @@ public class ManualDiff {
 				}
 				else if( tr.getType() instanceof TypeDefinition )
 				{
-					System.out.println( "Type definition: " + tr.getType().getName() );
+//					System.out.println( "Type definition: " + tr.getType().getName() );
 					String name = tr.getType().getName().substring(0,tr.getType().getName().indexOf(':'))+".ddf";
 					
 					try
 					{
 						if( resolve_type(rs, tr.getType().getName() ) != null )
 						{
-							System.out.println( "Existing type " + tr.getType() );
+//							System.out.println( "Existing type " + tr.getType() );
 						}
 						else
 						{
 							rs.getResource(URI.createURI(name), true);
-							System.out.println(name + " is loaded!" );
+//							System.out.println(name + " is loaded!" );
 						}
 					}
 					catch(Exception e)
@@ -197,10 +208,72 @@ public class ManualDiff {
 			TypeDefinitionWithAttributes td = find_mcs_object( (Model)res.getContents().get(0), type_name );
 			if( td != null )
 			{
-				System.out.println( "Found type: " + type_name );
+//				System.out.println( "Found type: " + type_name );
 				return td;
 			}			
 		}
+		return null;
+	}
+	
+	private static boolean find_attr_diff( Attributes org_attrs, Attributes new_attrs )
+	{
+		Attribute org_default = get_attr(AttributeKind.DEFAULT_ATT, org_attrs);
+		Attribute new_default = get_attr(AttributeKind.DEFAULT_ATT, new_attrs);
+		
+		if( ( org_default == null && new_default != null ) ||
+			( org_default != null && new_default == null ) )
+		{
+			System.out.println( "Default is added" );
+		}
+		else if( org_default != null && new_default != null )
+		{
+			ConstantExpression org_val = org_default.getValue();
+			ConstantExpression new_val = new_default.getValue();
+			
+			if( org_default.getValue() instanceof DDFP_CONSTANT )
+			{
+				DDFP_CONSTANT org_const = (DDFP_CONSTANT)org_default.getValue();
+				
+				if( new_default.getValue() instanceof DDFP_CONSTANT )
+				{
+					DDFP_CONSTANT new_const = (DDFP_CONSTANT)new_default.getValue();
+					
+					if( !org_const.getStringValue().equals(new_const.getStringValue()))
+					{
+						System.out.println( "Default value changed from " + org_const.getStringValue() + " to " + new_const.getStringValue() );
+						return true;
+					}
+				}
+			}
+			if( org_default.getValue() instanceof ConstantValueReference )
+			{
+				ConstantValue org_const = ((ConstantValueReference)org_default.getValue()).getRef();
+				
+				if( new_default.getValue() instanceof ConstantValueReference )
+				{
+					ConstantValue new_const = ((ConstantValueReference)new_default.getValue()).getRef();
+					
+					// TODO: this is not complete! It's not enough to check if the names are different,
+					// it must also be checked if they refer to the same value.
+					// Example: VAL_A != VAL_B but no changes in default is detected if 
+					// VAL_A = 10 and VAL_B = 10.
+					if( !org_const.getName().equals(new_const.getName()))
+					{
+						System.out.println( "Default value changed from " + org_const.getName() + " to " + new_const.getName() );
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	private static Attribute get_attr( AttributeKind kind, Attributes attrs )
+	{
+		if( attrs == null ) return null;
+		for( Attribute attr: attrs.getAttributeList() )
+			if( attr.getAttributeKind() == kind )
+				return attr;
 		return null;
 	}
 }
