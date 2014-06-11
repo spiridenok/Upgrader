@@ -1,12 +1,6 @@
 package test;
 
-import java.util.List;
-
-import javax.jws.WebParam.Mode;
-import javax.lang.model.type.ReferenceType;
-
 import org.eclipse.emf.common.util.URI;
-import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
@@ -23,127 +17,141 @@ import asml.dsl.ddf.ddf.DDFP_CONSTANT;
 import asml.dsl.ddf.ddf.DDFType;
 import asml.dsl.ddf.ddf.Definition;
 import asml.dsl.ddf.ddf.Model;
+import asml.dsl.ddf.ddf.MultipleStringsExpression;
+import asml.dsl.ddf.ddf.SetCommand;
+import asml.dsl.ddf.ddf.SetCommandBlock;
 import asml.dsl.ddf.ddf.StructDefinition;
 import asml.dsl.ddf.ddf.StructField;
 import asml.dsl.ddf.ddf.TypeDefinition;
 import asml.dsl.ddf.ddf.TypeDefinitionWithAttributes;
 import asml.dsl.ddf.ddf.TypeReference;
-import asml.dsl.ddf.query.DdfEObjectRetriever;
-import asml.dsl.ddf.services.DdfGrammarAccess.TypeReferenceElements;
+import asml.dsl.ddf.ddf.TypeSelector;
+import asml.dsl.ddf.ddf.TypeSelectorIdentifier;
 
-public class ManualDiff {
+public class ManualDiff 
+{
 
 	private static Resource orgResource;
 	private static ResourceSet rs;
 	private static ResourceSet newRs;
-	
-	public static void main(String[] args) {
-		DdfStandaloneSetup.doSetup();
+	private static Model orgModel;
+	private static Model newModel;
+
+	public static void main(String[] args) 
+	{
+		 DdfStandaloneSetup.doSetup();
+
+		 rs = new ResourceSetImpl();
+		 newRs = new ResourceSetImpl();
 		
-		rs = new ResourceSetImpl();
-//		Resource orgDefResource = rs.getResource(URI.createURI("DNDMxDEF.ddf"), true);
-		orgResource = rs.getResource(URI.createURI("DNDMxTRxDEF.ddf"), true);
-		newRs = new ResourceSetImpl();
-//		Resource newDefResource = newRs.getResource(URI.createURI("DNDMxDEF.ddf"), true);
-		Resource newResource = newRs.getResource(URI.createURI("DNDMxTRxDEF_new.ddf"), true);
-//		Resource resource = rs.getResource(URI.createFileURI("h:/garbage/DNDMxTRxDEF.ddf"), true);
-		EObject eObject = orgResource.getContents().get(0);
-		Model orgModel = (Model)eObject;
-		Model newModel = (Model)newResource.getContents().get(0);
+//		 orgResource = rs.getResource(URI.createURI("DNDMxTRxDEF.ddf"), true);
+//		 Resource newResource = newRs.getResource(URI.createURI("DNDMxTRxDEF_new.ddf"), true);
+//		 final String mcs_type = "DNDMxTRxDEF:trace_info_struct";
+
+		orgResource = rs.getResource(URI.createURI("MEENXAxMC.ddf"), true);
+		Resource newResource = newRs.getResource( URI.createURI("MEENXAxMC_org.ddf"), true);
+		final String mcs_type = "MEENXAxMC:MACH_CONST_STRUCT";
+
+		orgModel = (Model) orgResource.getContents().get(0);
+		newModel = (Model) newResource.getContents().get(0);
 		
-		final String mcs_type = "DNDMxTRxDEF:trace_info_struct";
-		
-		TypeDefinitionWithAttributes old_mcs = find_mcs_object(orgModel, mcs_type);		
+		TypeDefinitionWithAttributes old_mcs = find_mcs_object(orgModel, mcs_type);
 		TypeDefinitionWithAttributes new_mcs = find_mcs_object(newModel, mcs_type);
 
-		/* MC is always a structure*/
-		StructDefinition org_sd = (StructDefinition)old_mcs.getTypeDefinition();
-		StructDefinition new_sd = (StructDefinition)new_mcs.getTypeDefinition();
+		/* MC is always a structure */
+		StructDefinition org_sd = (StructDefinition) old_mcs.getTypeDefinition();
 
-		check_types(org_sd, newModel, "top_level" );
+		check_types(org_sd, newModel, "top_level");
+
+		System.out.println("FINISHED");
 	}
-	
-	private static void check_types( StructDefinition org_sd, Model new_model, String qualified_name )
-	{
-//		System.out.println( "--------------- " + org_sd.getName() + "-------------------------------" );
-		for( StructField sf : org_sd.getStructFieldList() )
-		{
-//			System.out.println("field: " + sf.getField() + ", type: " + sf.getType());
-//			System.out.println("field: " + sf.getField() + ", attrs: " + sf.getAttibutes());
-			final String full_field_name = qualified_name + "." + sf.getField();
-			
-//			TypeDefinitionWithAttributes new_mcs = find_mcs_object( new_model, org_sd.getName() );
-			TypeDefinitionWithAttributes new_mcs = resolve_type( newRs, org_sd.getName());
 
-			if( new_mcs == null )
+	private static void check_types(StructDefinition org_sd, Model new_model, String qualified_name) 
+	{
+		// System.out.println( "--------------- " + org_sd.getName() + "-------------------------------" );
+		for (StructField sf : org_sd.getStructFieldList()) 
+		{
+			// System.out.println("field: " + sf.getField() + ", type: " + sf.getType());
+			// System.out.println("field: " + sf.getField() + ", attrs: " + sf.getAttibutes());
+			final String full_field_name = qualified_name + "." + sf.getField();
+
+			// TypeDefinitionWithAttributes new_mcs = find_mcs_object( new_model, org_sd.getName() );
+			TypeDefinitionWithAttributes new_mcs = resolve_type(newRs, org_sd.getName());
+
+			if (new_mcs == null) 
 			{
-//				System.out.println( "Null for: " + org_sd.getName()  + ":" + sf.getField() + ":" + sf.getType().getClass());
-//				TypeReference tr = (TypeReference) sf.getType();
-				
-//				System.out.println( "Type definition: " + tr.getType().getName() );
+				// System.out.println( "Null for: " + org_sd.getName() + ":" + sf.getField() + ":" + sf.getType().getClass());
+				// TypeReference tr = (TypeReference) sf.getType();
+
+				// System.out.println( "Type definition: " + tr.getType().getName() );
 				String type_name = org_sd.getName();
-				
-				try
-				{
-					// TODO: just a hack to load "_new.dff". needs to be changed before going into production!
-					String name = type_name.substring(0,type_name.indexOf(':'))+"_new.ddf";
+
+				try {
+					// TODO: just a hack to load "_new.dff". needs to be changed
+					// before going into production!
+					String name = type_name.substring(0, type_name.indexOf(':')) + "_new.ddf";
 					newRs.getResource(URI.createURI(name), true);
-//					System.out.println(name + " is loaded for NEW!" );
-					new_mcs = resolve_type( newRs, org_sd.getName());
-				}
-				catch(Exception e)
-				{
+					// System.out.println(name + " is loaded for NEW!" );
+					new_mcs = resolve_type(newRs, org_sd.getName());
+				} catch (Exception e) {
 					System.out.println("!!! Can not resolve file " + type_name + " for field " + sf.getField());
 				}
 			}
-			StructDefinition new_sd = (StructDefinition)new_mcs.getTypeDefinition();
-//			System.out.println( "new sd: " + new_sd );
-			
-			StructField new_sf = find_struct_field(new_sd, sf.getField() );
-			if ( new_sf == null )
+			StructDefinition new_sd = (StructDefinition) new_mcs.getTypeDefinition();
+			// System.out.println( "new sd: " + new_sd );
+
+			StructField new_sf = find_struct_field(new_sd, sf.getField());
+			if (new_sf == null) 
 			{
-				System.out.println("Field is not found: " + full_field_name );
+				System.out.println("Field is not found: " + full_field_name);
 				return;
 			}
-			
-			if( find_attr_diff(sf.getAttibutes(), new_sf.getAttibutes()) )
-				System.out.println( "Attributes changed for " + full_field_name );
-			
-			boolean types_are_ok = same_types( sf.getType(), new_sf.getType() );
-//			System.out.println(" types are equal: " + types_are_ok  );
-			if( !types_are_ok )
+
+			if (find_default_attr_diff(sf.getAttibutes(), new_sf.getAttibutes()))
+				System.out.println("Attributes changed for " + full_field_name);
+			if (find_const_type_change(sf.getAttibutes(), new_sf.getAttibutes()))
+				System.out.println("Const type changed for " + full_field_name);
+			Attributes org_attrs = get_set_attributes(rs, org_sd.getName(), sf.getField());
+			Attributes new_attrs = get_set_attributes(newRs, new_sd.getName(), sf.getField());
+			if (find_default_attr_diff(org_attrs, new_attrs))
+				System.out.println("Attributes (set) changed for " + full_field_name);
+			if (find_const_type_change(org_attrs, new_attrs))
+				System.out.println("Const type (set) changed for " + full_field_name);
+
+			boolean types_are_ok = same_types(sf.getType(), new_sf.getType());
+			// System.out.println(" types are equal: " + types_are_ok );
+			if (!types_are_ok) 
 			{
-				System.out.println("Different types for field '" + full_field_name + "' " + get_type( sf.getType() ) + " -> " + get_type( new_sf.getType() ) );
+				System.out.println("Different types for field '" + full_field_name + "' " + get_type(sf.getType()) + " -> " + get_type(new_sf.getType()));
 			}
-			
-			if( sf.getType() instanceof TypeReference )
+
+			if (sf.getType() instanceof TypeReference) 
 			{
 				TypeReference tr = (TypeReference) sf.getType();
-//				if( tr.getType().getName().startsWith("DNDMxDEF:"))
-//					System.out.println( "Need to resolve + " + tr.getType().getName() );
-//				System.out.println( "Type is " + tr.getClass() + ":" + tr.getType());
-				if( tr.getType() instanceof StructDefinition)
+				// if( tr.getType().getName().startsWith("DNDMxDEF:"))
+				// System.out.println( "Need to resolve + " + tr.getType().getName() );
+				// System.out.println( "Type is " + tr.getClass() + ":" + tr.getType());
+				if (tr.getType() instanceof StructDefinition) 
 				{
-					check_types((StructDefinition)tr.getType(), new_model, full_field_name );
-				}
-				else if( tr.getType() instanceof TypeDefinition )
+					check_types((StructDefinition) tr.getType(), new_model, full_field_name);
+				} else if (tr.getType() instanceof TypeDefinition) 
 				{
-//					System.out.println( "Type definition: " + tr.getType().getName() );
-					String name = tr.getType().getName().substring(0,tr.getType().getName().indexOf(':'))+".ddf";
-					
-					try
+					// System.out.println( "Type definition: " + tr.getType().getName() );
+					String name = tr.getType().getName().substring(0, tr.getType().getName().indexOf(':')) + ".ddf";
+
+					try 
 					{
-						if( resolve_type(rs, tr.getType().getName() ) != null )
+						if (resolve_type(rs, tr.getType().getName()) != null) 
 						{
-//							System.out.println( "Existing type " + tr.getType() );
-						}
-						else
+							// System.out.println( "Existing type " + tr.getType() );
+						} 
+						else 
 						{
 							rs.getResource(URI.createURI(name), true);
-//							System.out.println(name + " is loaded!" );
+							// System.out.println(name + " is loaded!" );
 						}
-					}
-					catch(Exception e)
+					} 
+					catch (Exception e) 
 					{
 						System.out.println("!!! Can not resolve file " + name + " for field " + sf.getField());
 					}
@@ -151,115 +159,121 @@ public class ManualDiff {
 			}
 		}
 	}
-	
-	private static String get_type( DDFType ddfType )
+
+	private static String get_type(DDFType ddfType) 
 	{
-		if( ddfType instanceof BasicTypeReference )
-			return ((BasicTypeReference)ddfType).getType().getName();
-		if( ddfType instanceof TypeReference )
-			return ((TypeReference)ddfType).getType().getName();
+		if (ddfType instanceof BasicTypeReference)
+			return ((BasicTypeReference) ddfType).getType().getName();
+		if (ddfType instanceof TypeReference)
+			return ((TypeReference) ddfType).getType().getName();
 		else
 			return "Unknown type " + ddfType.getClass();
 	}
-		
-	private static boolean same_types( DDFType o, DDFType n ) 
+
+	private static boolean same_types(DDFType o, DDFType n) 
 	{
-		if( o instanceof BasicTypeReference && n instanceof BasicTypeReference )
+		if (o instanceof BasicTypeReference && n instanceof BasicTypeReference) 
 		{
-			return ((BasicTypeReference)o).getType() == ((BasicTypeReference)n).getType();
+			return ((BasicTypeReference) o).getType() == ((BasicTypeReference) n).getType();
 		}
-		if( o instanceof TypeReference && n instanceof TypeReference )
+		if (o instanceof TypeReference && n instanceof TypeReference) 
 		{
-			return ((TypeReference)o).getType().getName().equals( ((TypeReference)n).getType().getName() );
+			return ((TypeReference) o).getType().getName().equals(((TypeReference) n).getType().getName());
 		}
 		return false;
 	}
 
-	private static StructField find_struct_field( StructDefinition def, String sf_name )
+	private static StructField find_struct_field(StructDefinition def, String sf_name) 
 	{
-		for( StructField new_sf: def.getStructFieldList() )
+		for (StructField new_sf : def.getStructFieldList()) 
 		{
-			if( new_sf.getField().equals( sf_name ) )
+			if (new_sf.getField().equals(sf_name)) 
 			{
 				return new_sf;
 			}
 		}
 		return null;
 	}
-	
-	private static TypeDefinitionWithAttributes find_mcs_object( final Model model, final String mcs_type_name )
+
+	private static TypeDefinitionWithAttributes find_mcs_object( final Model model, final String mcs_type_name) 
 	{
-		for( Definition def: model.getDefinitions() )
+		for (Definition def : model.getDefinitions()) 
 		{
-			if (def instanceof TypeDefinitionWithAttributes )
+			if (def instanceof TypeDefinitionWithAttributes) 
 			{
-				TypeDefinitionWithAttributes typedef = (TypeDefinitionWithAttributes)def;
-				if( typedef.getTypeDefinition().getName().equals( mcs_type_name ) )
+				TypeDefinitionWithAttributes typedef = (TypeDefinitionWithAttributes) def;
+				if (typedef.getTypeDefinition().getName().equals(mcs_type_name))
 					return typedef;
 			}
 		}
 		return null;
 	}
 
-	private static TypeDefinitionWithAttributes resolve_type( ResourceSet set, String type_name )
+	private static TypeDefinitionWithAttributes resolve_type(ResourceSet set, String type_name) 
 	{
-		for( Resource res:  set.getResources() )
+		for (Resource res : set.getResources()) 
 		{
-			TypeDefinitionWithAttributes td = find_mcs_object( (Model)res.getContents().get(0), type_name );
-			if( td != null )
+			TypeDefinitionWithAttributes td = find_mcs_object((Model) res.getContents().get(0), type_name);
+			if (td != null) 
 			{
-//				System.out.println( "Found type: " + type_name );
+				// System.out.println( "Found type: " + type_name );
 				return td;
-			}			
+			}
 		}
 		return null;
 	}
-	
-	private static boolean find_attr_diff( Attributes org_attrs, Attributes new_attrs )
+
+	private static boolean find_default_attr_diff(Attributes org_attrs, Attributes new_attrs) 
 	{
 		Attribute org_default = get_attr(AttributeKind.DEFAULT_ATT, org_attrs);
 		Attribute new_default = get_attr(AttributeKind.DEFAULT_ATT, new_attrs);
-		
-		if( ( org_default == null && new_default != null ) ||
-			( org_default != null && new_default == null ) )
+
+		if ((org_default == null && new_default != null) || (org_default != null && new_default == null)) 
 		{
-			System.out.println( "Default is added" );
-		}
-		else if( org_default != null && new_default != null )
+			System.out.println("Default is added");
+			return true;
+		} 
+		else if (org_default != null && new_default != null) 
 		{
 			ConstantExpression org_val = org_default.getValue();
 			ConstantExpression new_val = new_default.getValue();
-			
-			if( org_default.getValue() instanceof DDFP_CONSTANT )
+
+			if (org_default.getValue() instanceof DDFP_CONSTANT) 
 			{
-				DDFP_CONSTANT org_const = (DDFP_CONSTANT)org_default.getValue();
-				
-				if( new_default.getValue() instanceof DDFP_CONSTANT )
+				DDFP_CONSTANT org_const = (DDFP_CONSTANT) org_default.getValue();
+
+				if (new_default.getValue() instanceof DDFP_CONSTANT) 
 				{
-					DDFP_CONSTANT new_const = (DDFP_CONSTANT)new_default.getValue();
-					
-					if( !org_const.getStringValue().equals(new_const.getStringValue()))
+					DDFP_CONSTANT new_const = (DDFP_CONSTANT) new_default.getValue();
+
+					if (!org_const.getStringValue().equals(new_const.getStringValue())) 
 					{
-						System.out.println( "Default value changed from " + org_const.getStringValue() + " to " + new_const.getStringValue() );
+						System.out.println("Default value changed from "
+								+ org_const.getStringValue() + " to "
+								+ new_const.getStringValue());
 						return true;
 					}
 				}
 			}
-			if( org_default.getValue() instanceof ConstantValueReference )
+			if (org_default.getValue() instanceof ConstantValueReference) 
 			{
-				ConstantValue org_const = ((ConstantValueReference)org_default.getValue()).getRef();
-				
-				if( new_default.getValue() instanceof ConstantValueReference )
+				ConstantValue org_const = ((ConstantValueReference) org_default.getValue()).getRef();
+
+				if (new_default.getValue() instanceof ConstantValueReference) 
 				{
-					ConstantValue new_const = ((ConstantValueReference)new_default.getValue()).getRef();
-					
-					// TODO: this is not complete! It's not enough to check if the names are different,
+					ConstantValue new_const = ((ConstantValueReference) new_default.getValue()).getRef();
+
+					// TODO: this is not complete! It's not enough to check if
+					// the names are different,
 					// it must also be checked if they refer to the same value.
-					// Example: VAL_A != VAL_B but no changes in default is detected if 
+					// Example: VAL_A != VAL_B but no changes in default is
+					// detected if
 					// VAL_A = 10 and VAL_B = 10.
-					if( !org_const.getName().equals(new_const.getName()))
+					if (!org_const.getName().equals(new_const.getName())) 
 					{
-						System.out.println( "Default value changed from " + org_const.getName() + " to " + new_const.getName() );
+						System.out.println("Default value changed from "
+								+ org_const.getName() + " to "
+								+ new_const.getName());
 						return true;
 					}
 				}
@@ -267,13 +281,66 @@ public class ManualDiff {
 		}
 		return false;
 	}
-	
-	private static Attribute get_attr( AttributeKind kind, Attributes attrs )
+
+	private static boolean find_const_type_change(Attributes org_attrs,Attributes new_attrs) 
 	{
-		if( attrs == null ) return null;
-		for( Attribute attr: attrs.getAttributeList() )
-			if( attr.getAttributeKind() == kind )
+		Attribute org_to_default = get_attr(AttributeKind.TO_DEFAULT_ATT, org_attrs);
+		Attribute new_to_default = get_attr(AttributeKind.TO_DEFAULT_ATT, new_attrs);
+
+		// DDF reports strings including quotes
+		String org_string = "\"on_creation\"";
+		String new_string = "\"on_creation\"";
+
+		if (org_to_default != null)
+			if (org_to_default.getValue() instanceof MultipleStringsExpression)
+				org_string = ((MultipleStringsExpression) org_to_default.getValue()).getStrings().get(0);
+		if (new_to_default != null)
+			if (new_to_default.getValue() instanceof MultipleStringsExpression)
+				new_string = ((MultipleStringsExpression) new_to_default.getValue()).getStrings().get(0);
+
+		if (org_string.equals(new_string)) 
+		{
+			return false;
+		} 
+		else 
+		{
+			System.out.println(org_string + " <-> " + new_string);
+			return true;
+		}
+	}
+
+	private static Attribute get_attr(AttributeKind kind, Attributes attrs) 
+	{
+		if (attrs == null)
+			return null;
+		for (Attribute attr : attrs.getAttributeList())
+			if (attr.getAttributeKind() == kind)
 				return attr;
+		return null;
+	}
+
+	private static Attributes get_set_attributes(ResourceSet resource_set, String struct_name, String field_name) 
+	{
+		TypeDefinitionWithAttributes sd_def = resolve_type(resource_set, struct_name);
+
+		for (SetCommandBlock command : sd_def.getSetCommandBlocks()) 
+		{
+			for (SetCommand set_command : command.getSetCommandList()) 
+			{
+				if (set_command.getSetname() instanceof TypeSelector) 
+				{
+					TypeSelector selector = (TypeSelector) set_command.getSetname();
+					if (selector.getHeadElement() instanceof TypeSelectorIdentifier) 
+					{
+						TypeSelectorIdentifier selector_id = (TypeSelectorIdentifier) selector.getHeadElement();
+						if (selector_id.getTid().equals(field_name)) 
+						{
+							return set_command.getAttributes();
+						}
+					}
+				}
+			}
+		}
 		return null;
 	}
 }
