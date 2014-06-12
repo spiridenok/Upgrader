@@ -2,19 +2,20 @@ package wizard;
 
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
-import org.eclipse.jface.wizard.WizardDialog;
 
 public class MyWizard extends Wizard {
 
-	protected SourceSelectionPage source_selection_page = new SourceSelectionPage();
-	protected AnalysisResultPage analysis_result_page = new AnalysisResultPage();
+	private ChangeModel model;
+	protected SourceSelectionPage source_selection_page;
+	protected AnalysisResultPage analysis_result_page;
 	protected OptionalPage optional_page = new OptionalPage();
 	
-	private String[] result = { "Result 1", "Result 2", "End Result" };
-
-	public MyWizard() {
+	public MyWizard( ChangeModel m ) {
 		super();
 		setNeedsProgressMonitor(true);
+		model = m;
+		source_selection_page = new SourceSelectionPage( model );
+		analysis_result_page = new AnalysisResultPage( model );
 	}
 
 	@Override
