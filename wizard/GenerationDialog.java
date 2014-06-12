@@ -17,15 +17,15 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
 
 public class GenerationDialog extends Dialog {	
 	
 	private Button button_ok;
+	private ChangeModel model;
 
-	public GenerationDialog(Shell shell) {
+	public GenerationDialog(Shell shell, ChangeModel m) {
 		super(shell);
+		model = m;
 	}
 
 	@Override
@@ -61,36 +61,11 @@ public class GenerationDialog extends Dialog {
 	    	
 			@Override
 			public void run() {
-		    	System.out.println("1");
-		    	final int sec = 1;
-		    	try {
-					Thread.currentThread();
-					Thread.sleep(sec * 1000 );
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-		    	System.out.println("2");
-		    	try {
-					Thread.currentThread();
-					Thread.sleep(sec * 1000 );
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-		    	System.out.println("3");
-		    	try {
-					Thread.currentThread();
-					Thread.sleep(sec * 1000 );
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-		    	System.out.println("4");
 		    	_display.asyncExec( new Runnable ()
 		    	{
 		    		public void run()
 		    		{
+		    			model.generate();
 				    	Cursor cursor = _display.getSystemCursor(SWT.CURSOR_ARROW);
 				    	_display.getActiveShell().setCursor(cursor);
 				    	_dialog.button_ok.setEnabled(true);
