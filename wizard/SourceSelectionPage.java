@@ -11,18 +11,21 @@ public class SourceSelectionPage extends WizardPage {
 	
 	private boolean new_dir_selected = false;
 	private boolean dacnf_file_selected = false;
+	
+	private ChangeModel model;
 
-	public SourceSelectionPage() {
+	public SourceSelectionPage( ChangeModel m ) {
 		super("First Page");
 		setTitle("Specify Files");
 		setDescription("Please specify constant files and directories");
-
+		model = m;
 	}
 
-	public void page_complete()
+	public void validate_page()
 	{
+		setPageComplete( dacnf_file_selected );
 //		setPageComplete( dacnf_file_selected && new_dir_selected );
-		setPageComplete( true );
+//		setPageComplete( true );
 	}
 	
 	@Override
@@ -54,7 +57,7 @@ public class SourceSelectionPage extends WizardPage {
 						{
 							lbl_new_dir.setText(selected_dir);
 							new_dir_selected = true;
-							page_complete();
+							validate_page();
 						}
 					}
 				});
@@ -117,7 +120,7 @@ public class SourceSelectionPage extends WizardPage {
 						{
 							lbl_dacnf_file.setText(selected_file);
 							dacnf_file_selected = true;
-							page_complete();
+							validate_page();
 						}
 					}
 				});
@@ -130,6 +133,19 @@ public class SourceSelectionPage extends WizardPage {
 		lbl_dacnf_file.setText("<no file selected>");
 		new Label(container, SWT.NONE);
 		
-		page_complete();
+		validate_page();
+	}
+	
+	@Override
+	public IWizardPage getNextPage() {
+		return super.getNextPage();
+	}
+	
+	@Override
+	public void setVisible(boolean visible) {
+		// Page gets hidden -> "Next" is clicked on it
+		if( !visible )
+			model.calculate_difference( lbl_dacnf_file.getText() );
+		super.setVisible(visible);
 	}
 }
