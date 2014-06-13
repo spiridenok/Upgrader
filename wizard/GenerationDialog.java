@@ -65,7 +65,8 @@ public class GenerationDialog extends Dialog {
 		    	{
 		    		public void run()
 		    		{
-		    			model.generate();
+		    			CodeGenerator generator = new CodeGenerator();
+		    			generator.generate(model);
 				    	Cursor cursor = _display.getSystemCursor(SWT.CURSOR_ARROW);
 				    	_display.getActiveShell().setCursor(cursor);
 				    	_dialog.button_ok.setEnabled(true);
