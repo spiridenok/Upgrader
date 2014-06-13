@@ -1,6 +1,14 @@
 package wizard;
 
-import javax.swing.GroupLayout.Alignment;
+import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.swt.widgets.Table;
 
 public class AnalysisResultPage extends WizardPage {
 
@@ -61,7 +69,13 @@ public class AnalysisResultPage extends WizardPage {
 		}
 		table.getColumn(0).setWidth(480);
 
-		container.getShell().setSize(800, 600);
 		table.setRedraw(true);
+	}
+	
+	@Override
+	public void setVisible(boolean visible) {
+		if( visible )
+			this.getShell().setSize(800, 600);
+		super.setVisible(visible);
 	}
 }
