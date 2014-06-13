@@ -9,16 +9,19 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
-public class main {
+public class Main {
 
 	public static void main(String[] args) {
 		Display display = new Display();
 		Shell shell = new Shell( display, SWT.BORDER );
-	    WizardDialog wizardDialog = new WizardDialog(shell,new MyWizard());
-	    if (wizardDialog.open() == Window.OK) {
+		ChangeModel model = new ChangeModel();
+	    WizardDialog wizardDialog = new WizardDialog(shell,new MyWizard(model));
+	    if (wizardDialog.open() == Window.OK) 
+//	    if (true) 
+	    {
 	    	System.out.println("Ok pressed");
 
-	    	GenerationDialog gd = new GenerationDialog(shell);
+	    	GenerationDialog gd = new GenerationDialog(shell, model);
 	    	gd.open();
 	    	
 	    } else {
