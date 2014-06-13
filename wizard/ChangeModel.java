@@ -1,19 +1,22 @@
 package wizard;
 
-import java.security.spec.DSAParameterSpec;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ChangeModel {
 	
 	private ParseDacnf dacnf;
 	private List<String> changed_defaults = new ArrayList<String>();
 	private List<String> changed_types = new ArrayList<String>();
+	private Set<String> unresolved_ddfs = new HashSet<String>();
 
 	public void calculate_difference( String old_files_path, String new_files_path, String dacnf_file_name ) {
 		System.out.println("Calculating differences started...");
-		changed_defaults = new ArrayList<String>();
-		changed_types = new ArrayList<String>();
+		changed_defaults.clear();
+		changed_types.clear();
+		unresolved_ddfs.clear();
 		
 //		try {
 //			Thread.currentThread();
@@ -26,6 +29,8 @@ public class ChangeModel {
 		dacnf = new ParseDacnf(dacnf_file_name);
 		System.out.println( "Data type " + dacnf.get_const_data_type() );		
 		
+		// TODO: clean this up - this constructor is one big side-effect.
+		// Make it implementation less surprising for developers. 
 		ManualDiff diff = new ManualDiff( this, old_files_path, new_files_path, dacnf.get_const_data_type() );
 		
 		System.out.println("Calculating differences finished.");
@@ -47,7 +52,7 @@ public class ChangeModel {
 	}
 
 	boolean changed_type_and_default() {
-		return true;
+		return !changed_defaults.isEmpty() && !changed_types.isEmpty();
 	}
 
 	String get_const_file_name()
@@ -65,6 +70,12 @@ public class ChangeModel {
 		changed_types.add(var);
 	}
 	
+	public void add_unresolved_ddf( String ddf_file )
+	{
+//		System.out.println( "add unresolved " + ddf_file );
+		unresolved_ddfs.add(ddf_file);
+	}
+	
 	public List<DisplayTableData> get_changes()
 	{
 		List<DisplayTableData> data = new ArrayList<DisplayTableData>();
@@ -78,5 +89,14 @@ public class ChangeModel {
 		}
 		
 		return data;
+	}
+
+	public boolean has_unresolved_ddfs() {
+//		System.out.println( "has?");
+		return !unresolved_ddfs.isEmpty();
+	}
+
+	public Set<String> get_unresolved_ddfs() {
+		return unresolved_ddfs;
 	}
 }
