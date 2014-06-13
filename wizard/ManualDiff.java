@@ -30,16 +30,16 @@ import asml.dsl.ddf.ddf.TypeSelectorIdentifier;
 public class ManualDiff 
 {
 
-	private static Resource orgResource;
-	private static ResourceSet rs;
-	private static ResourceSet newRs;
-	private static Model orgModel;
-	private static Model newModel;
-	private static ChangeModel change_model;
-	private static String org_dir;
-	private static String new_dir;
+	private Resource orgResource;
+	private ResourceSet rs;
+	private ResourceSet newRs;
+	private Model orgModel;
+	private Model newModel;
+	private ChangeModel change_model;
+	private String org_dir;
+	private String new_dir;
 
-	private static String get_ddf_file_name( final String dir, final String ddf_type )
+	private String get_ddf_file_name( final String dir, final String ddf_type )
 	{		
 		return "file:///" + dir.replace("\\", "/") + "/" + ddf_type.substring(0, ddf_type.indexOf(':')) + ".ddf";
 	}
@@ -71,7 +71,7 @@ public class ManualDiff
 //		System.out.println("FINISHED");
 	}
 
-	private static void check_types(StructDefinition org_sd, Model new_model, String qualified_name) 
+	private void check_types(StructDefinition org_sd, Model new_model, String qualified_name) 
 	{
 		TypeDefinitionWithAttributes new_mcs = resolve_type(newRs, org_sd.getName());
 
@@ -193,7 +193,7 @@ public class ManualDiff
 		}
 	}
 
-	private static String get_type(DDFType ddfType) 
+	private String get_type(DDFType ddfType) 
 	{
 		if (ddfType instanceof BasicTypeReference)
 			return ((BasicTypeReference) ddfType).getType().getName();
@@ -203,7 +203,7 @@ public class ManualDiff
 			return "Unknown type " + ddfType.getClass();
 	}
 
-	private static boolean same_types(DDFType o, DDFType n) 
+	private boolean same_types(DDFType o, DDFType n) 
 	{
 		if (o instanceof BasicTypeReference && n instanceof BasicTypeReference) 
 		{
@@ -216,7 +216,7 @@ public class ManualDiff
 		return false;
 	}
 
-	private static StructField find_struct_field(StructDefinition def, String sf_name) 
+	private StructField find_struct_field(StructDefinition def, String sf_name) 
 	{
 		for (StructField new_sf : def.getStructFieldList()) 
 		{
@@ -228,7 +228,7 @@ public class ManualDiff
 		return null;
 	}
 
-	private static TypeDefinitionWithAttributes find_mcs_object( final Model model, final String mcs_type_name) 
+	private TypeDefinitionWithAttributes find_mcs_object( final Model model, final String mcs_type_name) 
 	{
 		for (Definition def : model.getDefinitions()) 
 		{
@@ -242,7 +242,7 @@ public class ManualDiff
 		return null;
 	}
 
-	private static TypeDefinitionWithAttributes resolve_type(ResourceSet set, String type_name) 
+	private TypeDefinitionWithAttributes resolve_type(ResourceSet set, String type_name) 
 	{
 		for (Resource res : set.getResources()) 
 		{
@@ -260,7 +260,7 @@ public class ManualDiff
 		return null;
 	}
 
-	private static boolean find_default_attr_diff(Attributes org_attrs, Attributes new_attrs) 
+	private boolean find_default_attr_diff(Attributes org_attrs, Attributes new_attrs) 
 	{
 		Attribute org_default = get_attr(AttributeKind.DEFAULT_ATT, org_attrs);
 		Attribute new_default = get_attr(AttributeKind.DEFAULT_ATT, new_attrs);
@@ -316,7 +316,7 @@ public class ManualDiff
 		return false;
 	}
 
-	private static boolean find_const_type_change(Attributes org_attrs,Attributes new_attrs) 
+	private boolean find_const_type_change(Attributes org_attrs,Attributes new_attrs) 
 	{
 		Attribute org_to_default = get_attr(AttributeKind.TO_DEFAULT_ATT, org_attrs);
 		Attribute new_to_default = get_attr(AttributeKind.TO_DEFAULT_ATT, new_attrs);
@@ -343,7 +343,7 @@ public class ManualDiff
 		}
 	}
 
-	private static Attribute get_attr(AttributeKind kind, Attributes attrs) 
+	private Attribute get_attr(AttributeKind kind, Attributes attrs) 
 	{
 		if (attrs == null)
 			return null;
@@ -353,7 +353,7 @@ public class ManualDiff
 		return null;
 	}
 
-	private static Attributes get_set_attributes(ResourceSet resource_set, String struct_name, String field_name) 
+	private Attributes get_set_attributes(ResourceSet resource_set, String struct_name, String field_name) 
 	{
 		TypeDefinitionWithAttributes sd_def = resolve_type(resource_set, struct_name);
 
