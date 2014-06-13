@@ -14,8 +14,8 @@ public class MyWizard extends Wizard {
 		super();
 		setNeedsProgressMonitor(true);
 		model = m;
-		source_selection_page = new SourceSelectionPage( model );
 		analysis_result_page = new AnalysisResultPage( model );
+		source_selection_page = new SourceSelectionPage( model, analysis_result_page );
 	}
 
 	@Override
