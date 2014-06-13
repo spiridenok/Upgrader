@@ -25,6 +25,7 @@ public class AnalysisResultPage extends WizardPage {
 		setControl(container);
 		
 		table = new Table(container, SWT.BORDER | SWT.FULL_SELECTION);
+		table.setLinesVisible(true);
 
 		// For some reason set width on a column does not work...
 		String[] titles = {"Changed item", "Change type",  "Upgrader Type", "Patch scripts"};
@@ -32,39 +33,35 @@ public class AnalysisResultPage extends WizardPage {
 			TableColumn column = new TableColumn (table, SWT.NONE);
 //			column.setAlignment(SWT.CENTER);
 			column.setText(titles [i]);
-		}	
-		
-		TableItem item = new TableItem (table, SWT.NONE);
-		item.setText(0, "top_level.bla.data.something");
-		item.setText(1, "default");
-		item.setText(2, "None");
-		item.setText(3, "Yes");
-		
-		item = new TableItem (table, SWT.NONE);
-		item.setText(0, "top_level.something_totally_different.test");
-		item.setText(1, "type");
-		item.setText(2, "Copy");
-		item.setText(3, "No");
-		
-		item = new TableItem (table, SWT.NONE);
-		item.setText(0, "top_level.some_different.struct.changed");
-		item.setText(1, "scale");
-		item.setText(2, "Copy");
-		item.setText(3, "Yes");
-		
-		for (int i=0; i<titles.length; i++) {
-			table.getColumn(i).pack ();
+			column.pack ();
 		}
 		
 		GridData gd_table = new GridData(SWT.FILL, SWT.CENTER, true, true, 1, 1);
 		gd_table.heightHint = 192;
 		table.setLayoutData(gd_table);
 		table.setHeaderVisible(true);
-		table.setLinesVisible(true);
 		
 		Label lblNewLabel = new Label(container, SWT.NONE);
-		lblNewLabel.setText("Pressing finish will start process of generation of the required code, this might take some time...");
+		lblNewLabel.setText("Pressing finish will start process of generation of the required code, this might take some time..");
 		
 		setPageComplete(true);
+	}
+
+	public void display_results() 
+	{
+		table.setRedraw(false);
+		table.removeAll();
+		for( DisplayTableData data: model.get_changes() )
+		{
+			TableItem item = new TableItem (table, SWT.NONE);
+			item.setText(0, data.changed_item);
+			item.setText(1, data.change_type);
+			item.setText(2, data.upgrader);
+			item.setText(3, data.patch_scripts_needed? "Yes":"No");
+		}
+		table.getColumn(0).setWidth(480);
+
+		container.getShell().setSize(800, 600);
+		table.setRedraw(true);
 	}
 }
