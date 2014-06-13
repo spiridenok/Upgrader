@@ -13,12 +13,17 @@ public class SourceSelectionPage extends WizardPage {
 	private boolean dacnf_file_selected = false;
 	
 	private ChangeModel model;
-
-	public SourceSelectionPage( ChangeModel m ) {
+	
+	// TODO: this is a dirty hack - pages should not know each other.
+	// Must be cleaned up later!
+	private AnalysisResultPage res_page;
+	
+	public SourceSelectionPage( ChangeModel m, AnalysisResultPage result_page ) {
 		super("First Page");
 		setTitle("Specify Files");
 		setDescription("Please specify constant files and directories");
 		model = m;
+		res_page = result_page;
 	}
 
 	public void validate_page()
@@ -133,6 +138,12 @@ public class SourceSelectionPage extends WizardPage {
 		lbl_dacnf_file.setText("<no file selected>");
 		new Label(container, SWT.NONE);
 		
+		// For testing only:
+		lbl_new_dir.setText("C:\\Users\\dspirydz\\Desktop\\new");
+		lbl_old_dir.setText("C:\\Users\\dspirydz\\Desktop\\old");
+		lbl_dacnf_file.setText("H:\\garbage\\MEEN_MC.dacnf");
+		dacnf_file_selected = true;
+		
 		validate_page();
 	}
 	
@@ -145,7 +156,14 @@ public class SourceSelectionPage extends WizardPage {
 	public void setVisible(boolean visible) {
 		// Page gets hidden -> "Next" is clicked on it
 		if( !visible )
-			model.calculate_difference( lbl_dacnf_file.getText() );
+		{
+			model.calculate_difference( lbl_old_dir.getText(), lbl_new_dir.getText(), lbl_dacnf_file.getText() );
+			res_page.display_results();
+		}
+		else
+		{
+			this.getShell().setSize(600, 500);
+		}
 		super.setVisible(visible);
 	}
 }
