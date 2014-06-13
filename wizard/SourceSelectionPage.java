@@ -5,9 +5,9 @@ import javax.swing.JFileChooser;
 public class SourceSelectionPage extends WizardPage {
 
 	private Composite container;
-	private Label lbl_new_dir;
-	private Label lbl_old_dir;
-	private Label lbl_dacnf_file;
+	public Label lbl_new_dir;
+	public Label lbl_old_dir;
+	public Label lbl_dacnf_file;
 	
 	private boolean new_dir_selected = false;
 	private boolean dacnf_file_selected = false;
@@ -148,22 +148,9 @@ public class SourceSelectionPage extends WizardPage {
 	}
 	
 	@Override
-	public IWizardPage getNextPage() {
-		return super.getNextPage();
-	}
-	
-	@Override
 	public void setVisible(boolean visible) {
-		// Page gets hidden -> "Next" is clicked on it
-		if( !visible )
-		{
-			model.calculate_difference( lbl_old_dir.getText(), lbl_new_dir.getText(), lbl_dacnf_file.getText() );
-			res_page.display_results();
-		}
-		else
-		{
+		if( visible )
 			this.getShell().setSize(600, 500);
-		}
 		super.setVisible(visible);
 	}
 }
