@@ -24,7 +24,9 @@ public class Main {
 	    	GenerationDialog gd = new GenerationDialog(shell, model);
 	    	gd.open();
 	    	
-	    } else {
+	    } 
+	    else 
+	    {
 	    	System.out.println("Cancel pressed");
 	    }		
 	}
