@@ -9,6 +9,7 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
 
 import asml.dsl.ddf.DdfStandaloneSetup;
+import asml.dsl.ddf.ddf.ArrayDefinition;
 import asml.dsl.ddf.ddf.Attribute;
 import asml.dsl.ddf.ddf.AttributeKind;
 import asml.dsl.ddf.ddf.Attributes;
@@ -18,6 +19,7 @@ import asml.dsl.ddf.ddf.ConstantValueReference;
 import asml.dsl.ddf.ddf.DDFP_CONSTANT;
 import asml.dsl.ddf.ddf.DDFType;
 import asml.dsl.ddf.ddf.Definition;
+import asml.dsl.ddf.ddf.Dimension;
 import asml.dsl.ddf.ddf.Model;
 import asml.dsl.ddf.ddf.MultipleStringsExpression;
 import asml.dsl.ddf.ddf.SetCommand;
@@ -29,6 +31,7 @@ import asml.dsl.ddf.ddf.TypeDefinitionWithAttributes;
 import asml.dsl.ddf.ddf.TypeReference;
 import asml.dsl.ddf.ddf.TypeSelector;
 import asml.dsl.ddf.ddf.TypeSelectorIdentifier;
+import asml.dsl.ddf.ddf.VariableDimension;
 
 public class ManualDiff 
 {
@@ -132,7 +135,23 @@ public class ManualDiff
 			if ( find_default_attr_diff(org_attrs, new_attrs) )
 			{
 				System.out.println("Attributes changed for " + full_field_name);
-				change_model.add_changed_default( full_field_name );
+				DDFType type = sf.getType();
+				boolean var_array = false;
+				if( type instanceof TypeReference )
+				{
+					TypeReference tr = (TypeReference)type;
+					if( tr.getType() instanceof ArrayDefinition )
+					{
+						ArrayDefinition ad = (ArrayDefinition)tr.getType();
+						for( Dimension d : ad.getDimensions() )
+							if( d instanceof VariableDimension )
+								var_array = true;
+					}
+				}
+				if( var_array )
+					change_model.add_changed_var_array_len(full_field_name);
+				else
+					change_model.add_changed_default( full_field_name );
 			}
 			
 			org_attrs = get_attr_defs(AttributeKind.TO_DEFAULT_ATT, sf, org_sd, rs);
