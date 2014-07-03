@@ -1,5 +1,8 @@
 package wizard;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
@@ -116,11 +119,6 @@ public class ManualDiff
 			// System.out.println("field: " + sf.getField() + ", attrs: " + sf.getAttibutes());
 			final String full_field_name = qualified_name + "." + sf.getField();
 
-			if( sf.getField().equals("test"))
-			{
-				int a = 0;
-			}
-			
 			StructField new_sf = find_struct_field(new_sd, sf.getField());
 			if (new_sf == null) 
 			{
@@ -128,19 +126,22 @@ public class ManualDiff
 				return;
 			}
 			
-			Attributes org_attrs = get_set_attributes(rs, org_sd.getName(), sf.getField());
-			Attributes new_attrs = get_set_attributes(newRs, new_sd.getName(), sf.getField());
-			if ( find_default_attr_diff(sf.getAttibutes(), new_sf.getAttibutes()) || 
-				 find_default_attr_diff(org_attrs, new_attrs))
+			List<Attribute> org_attrs = get_attr_defs(AttributeKind.DEFAULT_ATT, sf, org_sd, rs);
+			List<Attribute> new_attrs = get_attr_defs(AttributeKind.DEFAULT_ATT, new_sf, new_sd, newRs);
+			
+			if ( find_default_attr_diff(org_attrs, new_attrs) )
 			{
 				System.out.println("Attributes changed for " + full_field_name);
 				change_model.add_changed_default( full_field_name );
 			}
-			if (find_const_type_change(sf.getAttibutes(), new_sf.getAttibutes()) || 
-			    find_const_type_change(org_attrs, new_attrs))
+			
+			org_attrs = get_attr_defs(AttributeKind.TO_DEFAULT_ATT, sf, org_sd, rs);
+			new_attrs = get_attr_defs(AttributeKind.TO_DEFAULT_ATT, new_sf, new_sd, newRs);
+			
+			if (find_const_type_change(sf.getAttibutes(), new_sf.getAttibutes()))
 			{
 				System.out.println("Const type changed for " + full_field_name);
-				change_model.add_changed_type(full_field_name);
+				change_model.add_changed_const_type(full_field_name);
 			}
 
 			boolean types_are_ok = same_types(sf.getType(), new_sf.getType());
@@ -148,6 +149,7 @@ public class ManualDiff
 			if (!types_are_ok) 
 			{
 				System.out.println("Different types for field '" + full_field_name + "' " + get_type(sf.getType()) + " -> " + get_type(new_sf.getType()));
+				change_model.add_changed_data_type(full_field_name);
 			}
 
 			if (sf.getType() instanceof TypeReference) 
@@ -260,7 +262,7 @@ public class ManualDiff
 		return null;
 	}
 
-	private boolean find_default_attr_diff(Attributes org_attrs, Attributes new_attrs) 
+	private boolean find_default_attr_diff(List<Attribute> org_attrs, List<Attribute> new_attrs) 
 	{
 		Attribute org_default = get_attr(AttributeKind.DEFAULT_ATT, org_attrs);
 		Attribute new_default = get_attr(AttributeKind.DEFAULT_ATT, new_attrs);
@@ -314,6 +316,13 @@ public class ManualDiff
 			}
 		}
 		return false;
+	}
+
+	private Attribute get_attr(AttributeKind kind, List<Attribute> attrs) {
+		for (Attribute attr : attrs)
+			if (attr.getAttributeKind() == kind)
+				return attr;
+		return null;
 	}
 
 	private boolean find_const_type_change(Attributes org_attrs,Attributes new_attrs) 
@@ -376,5 +385,48 @@ public class ManualDiff
 			}
 		}
 		return null;
+	}
+	
+	private List<Attribute> get_attr_defs( AttributeKind kind, StructField sf, StructDefinition org_sd, ResourceSet rs )
+	{
+		// First search "set" attributes for the right attribute kind 
+		Attributes org_set_attrs = get_set_attributes(rs, org_sd.getName(), sf.getField());
+		if( org_set_attrs != null )
+			if( get_attr(kind, org_set_attrs ) != null )
+				return org_set_attrs.getAttributeList();
+
+		// If this attribute kind is not found in 'set' - search the struct definition
+		if( sf.getAttibutes() != null )
+			if( get_attr(kind, sf.getAttibutes().getAttributeList()) != null )
+				return sf.getAttibutes().getAttributeList();			
+		
+		// Not found in the struct definition - search in the data type definition
+		TypeDefinitionWithAttributes org_type = resolve_type( rs, get_type( sf.getType() ) );
+		
+		if ( org_type == null && sf.getType() instanceof TypeDefinition ) 
+		{
+			String name = get_ddf_file_name(org_dir, get_type( sf.getType() ));
+			try 
+			{
+				rs.getResource(URI.createURI(name), true);
+			}
+			catch (Exception e) 
+			{
+				System.out.println("!!! Can not resolve file " + name + " for field " + sf.getField());
+				change_model.add_unresolved_ddf(name.replaceAll("file:///", ""));
+			}
+		}			
+		org_type = resolve_type( rs, get_type( sf.getType() ) );
+		if( org_type != null )
+		{
+			Attributes org_type_attrs = org_type.getMainAttributes();
+			
+			if( org_type_attrs != null )
+				if( get_attr(kind, org_type_attrs.getAttributeList()) != null )
+					return org_type_attrs.getAttributeList();
+		}
+		
+		// Not find at all - no value is specified for this attribute kind
+		return new ArrayList<Attribute>();
 	}
 }
